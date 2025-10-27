@@ -1,0 +1,878 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Finance Buddy — Bhavesh Churyai Technologies</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg-top: #f7f9fc;
+    --bg-bottom: #f2f6fb;
+    --glass: rgba(255,255,255,0.85);
+    --muted: #6b7280;
+    --accent-1: #6f5afc; /* purple */
+    --accent-2: #4fd1c5; /* teal */
+    --accent-grad: linear-gradient(90deg,var(--accent-1),#3aa3ff);
+    --card-shadow: rgba(19,38,60,0.06);
+    --soft-shadow: 0 6px 24px var(--card-shadow);
+    --radius: 14px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
+    background: linear-gradient(180deg,var(--bg-top),var(--bg-bottom));
+    color:#071029; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    height:100vh; overflow:hidden;
+  }
+
+  /* layout */
+  .app { display:grid; grid-template-columns:240px 1fr; gap:20px; height:100vh; padding:20px; }
+  @media (max-width:900px){ .app{ grid-template-columns:72px 1fr } }
+
+  /* sidebar */
+  .sidebar {
+    height:calc(100vh - 40px);
+    border-radius:18px;
+    padding:20px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(250,251,255,0.85));
+    box-shadow: var(--soft-shadow);
+    display:flex; flex-direction:column;
+  }
+
+  .brand {
+    display:flex; align-items:center; gap:12px; margin-bottom:8px;
+  }
+  .logo {
+    width:52px; height:52px; border-radius:12px;
+    background: linear-gradient(135deg,var(--accent-1),var(--accent-2));
+    color:white; display:flex;align-items:center;justify-content:center;
+    font-weight:700; font-size:18px; box-shadow: 0 6px 18px rgba(79,113,255,0.12);
+  }
+  .brand .text .title{font-weight:700;font-size:15px}
+  .brand .text .sub{font-size:12px;color:var(--muted)}
+
+  .nav { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+  .nav button {
+    display:flex; align-items:center; gap:12px; padding:10px;border-radius:12px;
+    background:transparent; border:none; cursor:pointer; color: #071029; font-weight:700;
+    transition: all .18s ease; justify-content:flex-start;
+  }
+  .nav button .icon {
+    width:36px; height:36px; display:flex;align-items:center;justify-content:center; border-radius:9px;
+    background:rgba(245,247,250,0.8); color:#4b5563; font-size:16px;
+    box-shadow: 0 3px 8px rgba(15,23,42,0.04);
+  }
+  .nav button:hover { transform:translateX(6px); }
+  .nav button.active {
+    color:white; background: var(--accent-grad); box-shadow: 0 12px 30px rgba(64,59,255,0.12);
+  }
+  .nav button.active .icon { background: rgba(255,255,255,0.12); color:white }
+
+  .sidebar .bottom { margin-top:auto; display:flex; flex-direction:column; gap:12px; }
+  .profile {
+    display:flex; align-items:center; gap:12px; padding:8px; border-radius:12px; background:rgba(255,255,255,0.6);
+    border:1px solid rgba(230,235,245,0.9);
+  }
+  .avatar { width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:700;color:white }
+
+  .btn-ghost { background:transparent; border:1px solid rgba(235,241,250,0.9); color:var(--muted); padding:8px 10px; border-radius:10px; font-weight:700; cursor:pointer }
+  .btn { padding:8px 12px; border-radius:10px; border:none; cursor:pointer; font-weight:700 }
+
+  /* main */
+  .main { overflow:auto; padding:0 6px 40px 6px; height:100vh; }
+  .topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; padding:8px 6px; }
+  .search { display:flex; gap:8px; align-items:center; }
+
+  .chip {
+    padding:8px 12px; border-radius:999px; background:white; border:1px solid rgba(240,245,255,0.9); font-size:13px; box-shadow: 0 6px 18px rgba(12,20,40,0.04);
+  }
+
+  /* content grid */
+  .grid { display:grid; grid-template-columns: 1fr 420px; gap:20px; align-items:start; }
+  @media (max-width:1050px){ .grid { grid-template-columns: 1fr; } }
+
+  /* cards */
+  .card {
+    border-radius: var(--radius);
+    padding:18px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.95));
+    box-shadow: 0 10px 30px var(--card-shadow);
+    border: 1px solid rgba(235,241,251,0.9);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .card:hover{ transform:translateY(-6px); box-shadow: 0 26px 40px rgba(12,26,70,0.06); }
+
+  .row { display:flex; gap:12px; align-items:center }
+  .col { display:flex; flex-direction:column }
+
+  .small { font-size:13px; color:var(--muted) }
+  .muted { color:var(--muted) }
+
+  /* form controls */
+  input, select {
+    padding:10px 12px; border-radius:10px; border:1px solid rgba(235,241,251,0.95); background:rgba(255,255,255,0.9); font-size:14px;
+    box-shadow: inset 0 -1px 0 rgba(15,23,42,0.02);
+    outline:none;
+  }
+  input:focus, select:focus { box-shadow: 0 6px 18px rgba(79,90,255,0.06); border-color: rgba(79,90,255,0.18) }
+
+  .btn-primary {
+    background: linear-gradient(90deg,var(--accent-1),#2b96ff);
+    color:#fff; border:none; padding:10px 14px; border-radius:12px; font-weight:800; cursor:pointer;
+    box-shadow: 0 8px 22px rgba(66,56,255,0.12);
+  }
+
+  .btn-ghost { background:transparent; border:1px solid rgba(235,241,251,0.95); color:var(--muted); padding:10px 12px; border-radius:12px; }
+
+  /* account list */
+  .acct-row { display:flex; justify-content:space-between; align-items:center; padding:12px; border-radius:12px; background:white; border:1px solid rgba(240,246,255,0.9); margin-bottom:8px }
+  .acct-name { font-weight:800 }
+  .acct-meta { color:var(--muted); font-size:13px }
+
+  /* tx list */
+  .tx-list { max-height:320px; overflow:auto; margin-top:8px; padding-right:6px }
+  .tx-item { display:flex; justify-content:space-between; padding:12px; border-radius:10px; background:linear-gradient(180deg,#ffffff,#fbfdff); border:1px solid rgba(240,245,255,0.9); margin-bottom:8px; opacity:0; transform:translateY(8px); animation:fadeInUp .28s forwards }
+  @keyframes fadeInUp { to{ opacity:1; transform:none } }
+
+  /* charts */
+  #pieCanvas { width:200px!important; height:200px!important }
+  .legend { display:flex; flex-direction:column; gap:8px; margin-left:12px }
+
+  /* calculators */
+  .calc-row { display:grid; grid-template-columns: 1fr 1fr; gap:12px }
+  @media (max-width:720px){ .calc-row{ grid-template-columns:1fr } }
+
+  /* toast */
+  .toast { position:fixed; right:22px; bottom:28px; background:rgba(10,14,32,0.96); color:white; padding:12px 16px; border-radius:10px; box-shadow:0 10px 30px rgba(2,6,23,0.28); transform:translateY(20px); opacity:0; pointer-events:none; transition:all .33s }
+  .toast.show { opacity:1; transform:translateY(0); pointer-events:auto }
+
+  /* goal list */
+  .goal-item {
+    padding:14px; border-radius:12px; border:1px solid rgba(235,241,251,0.9); background:white; margin-bottom:12px;
+  }
+  .progress-bar {
+    height:8px; background:#e0e7ff; border-radius:999px; margin-top:6px;
+  }
+  .progress-fill {
+    height:100%; width:0%; border-radius:999px; background:var(--accent-1); transition:width .5s ease;
+  }
+
+  /* footer */
+  .footer { text-align:center; color:var(--muted); font-size:13px; padding:16px 0; margin-top:18px }
+
+  /* scrollbar (for main area) */
+  .main::-webkit-scrollbar, .tx-list::-webkit-scrollbar, .sidebar::-webkit-scrollbar { width:10px; height:10px }
+  .main::-webkit-scrollbar-thumb, .tx-list::-webkit-scrollbar-thumb, .sidebar::-webkit-scrollbar-thumb { background: rgba(100,120,160,0.12); border-radius:999px }
+  .main::-webkit-scrollbar-track { background: transparent }
+
+  /* utility */
+  .tiny { font-size:12px }
+  .divider { height:1px; background:rgba(240,246,255,0.9); margin:12px 0; border-radius:2px }
+</style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="Sidebar">
+      <div class="brand">
+        <div class="logo">BC</div>
+        <div class="text">
+          <div class="title">Bhavesh Churyai</div>
+          <div class="sub">Technologies</div>
+        </div>
+      </div>
+
+      <nav class="nav" id="mainNav">
+        <button class="active" data-tab="dashboard" onclick="navTo(event)">
+          <span class="icon">🏠</span><span class="label">Dashboard</span>
+        </button>
+        <button data-tab="accounts" onclick="navTo(event)">
+          <span class="icon">🏦</span><span class="label">Accounts</span>
+        </button>
+        <button data-tab="expenses" onclick="navTo(event)">
+          <span class="icon">🧾</span><span class="label">Expenses</span>
+        </button>
+        <button data-tab="goals" onclick="navTo(event)">
+          <span class="icon">🎯</span><span class="label">Goals</span>
+        </button>
+        <button data-tab="invest" onclick="navTo(event)">
+          <span class="icon">📈</span><span class="label">Investments</span>
+        </button>
+        <button data-tab="loan" onclick="navTo(event)">
+          <span class="icon">💸</span><span class="label">Loans</span>
+        </button>
+      </nav>
+
+      <div class="bottom">
+        <div class="divider"></div>
+        <div class="profile">
+          <div class="avatar">BC</div>
+          <div style="display:flex;flex-direction:column">
+            <div style="font-weight:700">Bhavesh</div>
+            <div class="muted">Student • Developer</div>
+          </div>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button class="btn-ghost" onclick="exportData()">Export</button>
+          <button class="btn" style="background:#fff;border:1px solid rgba(240,246,255,0.95)" onclick="clearAllData()">Reset</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="search">
+          <div style="display:flex;flex-direction:column">
+            <div style="font-size:16px;font-weight:700">Finance Buddy</div>
+            <div class="muted">Bhavesh Churyai Technologies</div>
+          </div>
+        </div>
+        <div class="top-actions" style="display:flex;align-items:center;gap:10px">
+          <div class="chip" id="totalBalanceTop">Total: ₹0.00</div>
+          <button class="btn-ghost" title="Notifications">🔔</button>
+          <div style="width:38px"></div>
+        </div>
+      </div>
+
+      <section id="contentArea">
+        <div id="dashboard" class="tabContent">
+          <div class="grid">
+            <div>
+              <div class="card">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <div>
+                    <div style="font-size:16px;font-weight:700">Quick Operations</div>
+                    <div class="muted">Deposit / expense / transfer — multi-account</div>
+                  </div>
+                  <div class="tiny muted">Tip: choose account, then submit</div>
+                </div>
+
+                <div style="margin-top:14px" class="row">
+                  <div style="flex:1">
+                    <label class="small">Selected account</label>
+                    <select id="selectedAccount" onchange="onAccountSelect()"></select>
+                  </div>
+
+                  <div style="width:160px">
+                    <label class="small">Operation</label>
+                    <select id="opType" onchange="onOpTypeChange()">
+                      <option value="deposit">Deposit</option>
+                      <option value="withdraw">Expense</option>
+                      <option value="transfer">Transfer</option>
+                    </select>
+                  </div>
+
+                  <div style="width:140px">
+                    <label class="small">Amount (₹)</label>
+                    <input id="opAmount" type="number" placeholder="1000" />
+                  </div>
+
+                  <div id="toAccountWrap" style="width:180px;display:none">
+                    <label class="small">To account</label>
+                    <select id="toAccount"></select>
+                  </div>
+
+                </div>
+
+                <div style="display:flex;gap:8px;margin-top:14px;align-items:center">
+                  <div id="categoryWrap" style="display:none;width:220px">
+                    <label class="small">Category (for expenses)</label>
+                    <select id="categorySelect">
+                      <option value="Shopping">🛒 Shopping</option>
+                      <option value="Hotel">🏨 Hotel</option>
+                      <option value="Study">🎓 Study</option>
+                      <option value="Travel">✈️ Travel</option>
+                      <option value="Food">🍽️ Food</option>
+                      <option value="Misc">💸 Miscellaneous</option>
+                    </select>
+                  </div>
+
+                  <button class="btn-primary" onclick="performOp()">Submit</button>
+                  <button class="btn-ghost" onclick="clearInputs()">Clear</button>
+                </div>
+              </div>
+
+              <div class="card" style="margin-top:16px">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <div>
+                    <div style="font-size:16px;font-weight:700">Accounts Summary</div>
+                    <div class="muted tiny">Summary of your accounts</div>
+                  </div>
+                  <div class="muted tiny">Auto-saved locally</div>
+                </div>
+
+                <div style="margin-top:12px" id="accountsSummary"></div>
+              </div>
+
+            </div>
+
+            <aside>
+              <div class="card">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <div style="font-weight:700">Expense Breakdown</div>
+                  <div class="muted tiny">By category</div>
+                </div>
+                <div style="display:flex;gap:12px;align-items:center;margin-top:14px">
+                  <canvas id="pieCanvas" width="200" height="200"></canvas>
+                  <div class="legend" id="legendWrap"></div>
+                </div>
+                <div style="margin-top:12px">
+                  <div style="font-weight:700">Recent Transactions</div>
+                  <div class="tx-list" id="txList"></div>
+                </div>
+              </div>
+
+              <div class="card" style="margin-top:14px">
+                <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700">Totals</div><div class="muted tiny">Overview</div></div>
+                <div style="margin-top:12px">
+                  <div class="row" style="justify-content:space-between"><div class="small">Total Balance</div><div id="totalBalanceCard" style="font-weight:800">₹0.00</div></div>
+                  <div class="row" style="justify-content:space-between;margin-top:10px"><div class="small">Total Spent</div><div id="totalSpentCard" style="font-weight:800">₹0.00</div></div>
+                  <div class="row" style="justify-content:space-between;margin-top:10px"><div class="small">Transactions</div><div id="totalTxCard" style="font-weight:800">0</div></div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+
+        <div id="accounts" class="tabContent" style="display:none">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div><div style="font-weight:700">Manage Accounts</div><div class="muted tiny">Create, delete, and export</div></div>
+              <div style="display:flex;gap:8px">
+                <input id="newAcctName" placeholder="Account name" style="width:220px" />
+                <input id="newAcctBalance" type="number" placeholder="Opening" style="width:120px" />
+                <button class="btn-primary" onclick="createAccount()">Create</button>
+              </div>
+            </div>
+            <div style="margin-top:12px" id="accountsList"></div>
+          </div>
+        </div>
+
+        <div id="expenses" class="tabContent" style="display:none">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div><div style="font-weight:700">All Activity</div><div class="muted tiny">Global transaction history</div></div>
+              <div class="muted tiny">Saved locally</div>
+            </div>
+            <div style="margin-top:12px" id="allHistory" class="muted"></div>
+          </div>
+        </div>
+
+        <div id="goals" class="tabContent" style="display:none">
+          <div class="card">
+            <div style="font-weight:700">Create New Goal</div>
+            <div class="muted tiny">Set a target for a big purchase or saving milestone</div>
+
+            <div style="margin-top:12px;display:flex;gap:12px;align-items:flex-end">
+              <div style="flex:2">
+                <label class="small">Goal Name (e.g., Laptop)</label>
+                <input id="goalName" placeholder="Buy New Laptop" />
+              </div>
+              <div style="flex:1">
+                <label class="small">Target Amount (₹)</label>
+                <input id="goalTarget" type="number" placeholder="12000" />
+              </div>
+              <div style="flex:1">
+                <label class="small">Target Date (Optional)</label>
+                <input id="goalDate" type="date" />
+              </div>
+              <button class="btn-primary" onclick="createGoal()">Create Goal</button>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:16px">
+            <div style="font-weight:700">My Savings Goals</div>
+            <div class="muted tiny">Track your progress and strategic saving plan</div>
+            <div style="margin-top:12px" id="goalsList"></div>
+          </div>
+        </div>
+
+        <div id="invest" class="tabContent" style="display:none">
+          <div class="grid" style="grid-template-columns:1fr 420px; gap:18px;">
+            <div>
+              <div class="card">
+                <div style="font-weight:700">Investment Calculator</div>
+                <div class="muted tiny">Estimate future value and profit (compounded annually)</div>
+                <div style="margin-top:12px" class="calc-row">
+                  <div>
+                    <label class="small">Investment Type</label>
+                    <select id="invType"><option>FD</option><option>SIP</option><option>MF</option></select>
+                  </div>
+                  <div>
+                    <label class="small">Amount (₹)</label>
+                    <input id="invAmount" type="number" />
+                  </div>
+                  <div>
+                    <label class="small">Annual Rate (%)</label>
+                    <input id="invRate" type="number" />
+                  </div>
+                  <div>
+                    <label class="small">Years</label>
+                    <input id="invYears" type="number" />
+                  </div>
+                  <div style="grid-column:1 / -1; display:flex; gap:8px; margin-top:8px">
+                    <button class="btn-primary" onclick="calcInvestment()">Calculate</button>
+                    <button class="btn-ghost" onclick="clearInvestment()">Clear</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card" style="margin-top:12px">
+                <div style="font-weight:700">Investment Result</div>
+                <div class="muted tiny">Projected value</div>
+                <div style="margin-top:10px"><strong id="invTotal">₹0.00</strong></div>
+                <div class="muted tiny" id="invBreak" style="margin-top:6px">Profit: ₹0.00</div>
+              </div>
+            </div>
+
+            <div>
+              <div class="card">
+                <div style="font-weight:700">Investment Chart</div>
+                <canvas id="invChart" width="360" height="200" style="margin-top:12px"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="loan" class="tabContent" style="display:none">
+          <div class="grid" style="grid-template-columns:1fr 420px; gap:18px;">
+            <div>
+              <div class="card">
+                <div style="font-weight:700">Loan EMI Calculator</div>
+                <div class="muted tiny">Calculate EMI, total payment & interest</div>
+                <div style="margin-top:12px" class="calc-row">
+                  <div>
+                    <label class="small">Loan Amount (₹)</label>
+                    <input id="loanAmount" type="number" />
+                  </div>
+                  <div>
+                    <label class="small">Annual Rate (%)</label>
+                    <input id="loanRate" type="number" />
+                  </div>
+                  <div>
+                    <label class="small">Years</label>
+                    <input id="loanYears" type="number" />
+                  </div>
+                  <div style="grid-column:1 / -1; display:flex; gap:8px; margin-top:8px">
+                    <button class="btn-primary" onclick="calcLoan()">Calculate EMI</button>
+                    <button class="btn-ghost" onclick="clearLoan()">Clear</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card" style="margin-top:12px">
+                <div style="font-weight:700">EMI Result</div>
+                <div class="muted tiny">Monthly EMI</div>
+                <div style="margin-top:8px"><strong id="emiAmt">₹0.00</strong></div>
+                <div class="muted tiny" id="loanBreak" style="margin-top:6px">Total payment & interest</div>
+              </div>
+            </div>
+
+            <div>
+              <div class="card">
+                <div style="font-weight:700">Repayment Chart</div>
+                <canvas id="loanChart" width="360" height="200" style="margin-top:12px"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <div class="footer">© 2025 Bhavesh Churyai Technologies — Finance Buddy</div>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+<script>
+/* ---------- state & storage ---------- */
+const STORAGE_KEY = 'fb_4_dashboard_v1';
+let state = loadState();
+// Added 'goals' to the default state structure
+function defaultState(){ return { accounts:[], history:[], goals:[] } }
+function loadState(){ try{ const raw = localStorage.getItem(STORAGE_KEY); if(!raw) return defaultState(); return JSON.parse(raw); }catch(e){ return defaultState(); } }
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+/* utils */
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function ts(){ return new Date().toLocaleString(); }
+function toast(msg){ const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(()=> t.classList.remove('show'),2400); }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]); }
+function daysBetween(date1, date2) {
+    const d1 = new Date(date1);
+    const d2 = new Date(date2);
+    const diffTime = Math.abs(d2 - d1);
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+function formatDate(dateString) {
+    if (!dateString) return 'No Target Date';
+    return new Date(dateString).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+/* init demo if empty */
+if(!state.accounts) state.accounts = [];
+if(!state.history) state.history = [];
+if(!state.goals) state.goals = []; // Initialize goals
+if(state.accounts.length===0){
+  state.accounts.push({ id: uid(), name:'Savings', balance:12500, transactions:[{id:uid(),type:'deposit',amount:12500,category:null,to_id:null,ts:ts()}] });
+  state.accounts.push({ id: uid(), name:'Pocket', balance:3200, transactions:[{id:uid(),type:'deposit',amount:3200,category:null,to_id:null,ts:ts()}] });
+  state.history.unshift(`${ts()} — Demo accounts created`);
+  // Add a demo goal
+  const today = new Date();
+  const targetDate = new Date(today.setMonth(today.getMonth() + 10)).toISOString().split('T')[0];
+  state.goals.push({ id: uid(), name:'New Laptop', target:12000, saved:1500, targetDate: targetDate });
+
+  saveState();
+}
+
+/* ---------- DOM references ---------- */
+const tabs = ['dashboard','accounts','expenses','goals','invest','loan'];
+const CATEGORY_COLORS = {'Shopping':'#2b7bff','Hotel':'#5bc0de','Study':'#ffb347','Travel':'#ff6961','Food':'#8cd17d','Misc':'#9aa4ff'};
+
+let pieChart=null, invChart=null, loanChart=null;
+
+/* NAV */
+function navTo(e){
+  const btn = e.currentTarget;
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const tab = btn.dataset.tab;
+  switchTab(tab);
+}
+
+function switchTab(tab){
+  tabs.forEach(t=>{
+    const el = document.getElementById(t);
+    if(el) el.style.display = (t===tab) ? '' : 'none';
+    document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  });
+  // activate left nav button too
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+}
+
+/* ---------- render & refresh ---------- */
+function refreshAll(){
+  renderAccountSelects();
+  renderAccountsList();
+  renderAccountsSummary();
+  renderTxList();
+  updatePieChart();
+  renderAllActivity();
+  renderGoalsList(); // New goals rendering function
+  updateTopTotals();
+  saveState();
+}
+
+function updateTopTotals(){
+  const total = state.accounts.reduce((s,a)=>s+a.balance,0);
+  document.getElementById('totalBalanceTop').textContent = `Total: ₹${total.toFixed(2)}`;
+  document.getElementById('totalBalanceCard').textContent = `₹${total.toFixed(2)}`;
+  const spent = state.accounts.reduce((s,a)=> s + a.transactions.filter(t=>t.type==='withdraw').reduce((ss,t2)=>ss+t2.amount,0),0);
+  document.getElementById('totalSpentCard').textContent = `₹${spent.toFixed(2)}`;
+  const txc = state.accounts.reduce((s,a)=> s + a.transactions.length,0);
+  document.getElementById('totalTxCard').textContent = txc;
+}
+
+function renderAccountSelects(){
+  const sel = document.getElementById('selectedAccount');
+  const toSel = document.getElementById('toAccount');
+  sel.innerHTML=''; toSel.innerHTML='';
+  state.accounts.forEach(acc=>{
+    sel.insertAdjacentHTML('beforeend', `<option value="${acc.id}">${escapeHtml(acc.name)} • ₹${acc.balance.toFixed(2)}</option>`);
+    toSel.insertAdjacentHTML('beforeend', `<option value="${acc.id}">${escapeHtml(acc.name)} • ₹${acc.balance.toFixed(2)}</option>`);
+  });
+  if(!sel.value && state.accounts.length>0) sel.value = state.accounts[0].id;
+}
+
+function renderAccountsList(){
+  const wrap = document.getElementById('accountsList');
+  wrap.innerHTML='';
+  state.accounts.forEach(acc=>{
+    const div = document.createElement('div');
+    div.className='acct-row';
+    div.innerHTML = `<div>
+      <div class="acct-name">${escapeHtml(acc.name)}</div>
+      <div class="acct-meta">ID ${acc.id} • ₹${acc.balance.toFixed(2)}</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-ghost" onclick="selectAccount('${acc.id}')">Select</button>
+      <button class="btn" style="background:#fff;border:1px solid rgba(240,246,255,0.95)" onclick="deleteAccount('${acc.id}')">Delete</button>
+    </div>`;
+    wrap.appendChild(div);
+  });
+}
+
+function renderAccountsSummary(){
+  const el = document.getElementById('accountsSummary');
+  el.innerHTML = '';
+  if(state.accounts.length===0){ el.innerHTML = '<div class="muted">No accounts</div>'; return; }
+  state.accounts.forEach(acc=>{
+    el.insertAdjacentHTML('beforeend',
+      `<div style="padding:12px;border-radius:10px;border:1px solid rgba(240,246,255,0.9);margin-bottom:10px;background:#fff">
+        <div style="display:flex;justify-content:space-between"><div style="font-weight:800">${escapeHtml(acc.name)}</div><div class="muted tiny">ID ${acc.id}</div></div>
+        <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">
+          <div class="muted">Balance</div><div style="font-weight:800">₹${acc.balance.toFixed(2)}</div>
+        </div>
+      </div>`
+    );
+  });
+}
+
+/* ---------- accounts CRUD ---------- */
+function createAccount(){
+  const name = document.getElementById('newAcctName').value.trim();
+  const bal = parseFloat(document.getElementById('newAcctBalance').value) || 0;
+  if(!name) return toast('Enter account name');
+  const acc = { id: uid(), name, balance: bal, transactions: [] };
+  if(bal>0) acc.transactions.unshift({ id: uid(), type:'deposit', amount:bal, category:null, to_id:null, ts:ts() });
+  state.accounts.push(acc);
+  state.history.unshift(`${ts()} — Created account '${name}' with ₹${bal.toFixed(2)}`);
+  toast('Account created ✔');
+  document.getElementById('newAcctName').value=''; document.getElementById('newAcctBalance').value='';
+  refreshAll();
+  setTimeout(()=> selectAccount(acc.id), 200);
+}
+
+function deleteAccount(id){
+  if(!confirm('Delete account and all transactions?')) return;
+  state.accounts = state.accounts.filter(a=>a.id!==id);
+  state.history.unshift(`${ts()} — Deleted account ${id}`);
+  toast('Account deleted');
+  refreshAll();
+}
+
+function selectAccount(id){
+  document.getElementById('selectedAccount').value = id;
+  switchTab('dashboard');
+  renderTxList();
+}
+
+/* ---------- operations ---------- */
+function onOpTypeChange(){
+  const type = document.getElementById('opType').value;
+  document.getElementById('toAccountWrap').style.display = (type==='transfer') ? 'block':'none';
+  document.getElementById('categoryWrap').style.display = (type==='withdraw') ? 'block':'none';
+}
+function clearInputs(){ document.getElementById('opAmount').value=''; document.getElementById('categorySelect').value='Shopping'; }
+
+function performOp(){
+  const accId = document.getElementById('selectedAccount').value;
+  if(!accId) return toast('No account selected');
+  const acc = state.accounts.find(a=>a.id===accId); if(!acc) return toast('Account not found');
+  const op = document.getElementById('opType').value;
+  const amount = Math.abs(parseFloat(document.getElementById('opAmount').value) || 0);
+  if(!amount || amount<=0) return toast('Enter a valid amount');
+
+  if(op==='deposit'){
+    acc.balance += amount;
+    acc.transactions.unshift({ id: uid(), type:'deposit', amount, category:null, to_id:null, ts:ts() });
+    state.history.unshift(`${ts()} — Deposited ₹${amount.toFixed(2)} to '${acc.name}'`);
+    toast('Deposit successful ✔');
+  } else if(op==='withdraw'){
+    if(acc.balance < amount) return toast('Insufficient funds');
+    const category = document.getElementById('categorySelect').value;
+    acc.balance -= amount;
+    acc.transactions.unshift({ id: uid(), type:'withdraw', amount, category, to_id:null, ts:ts() });
+    state.history.unshift(`${ts()} — ${acc.name} spent ₹${amount.toFixed(2)} on ${category}`);
+    toast('Expense recorded ✔');
+  } else if(op==='transfer'){
+    const toId = document.getElementById('toAccount').value;
+    if(!toId) return toast('Choose destination');
+    if(toId === accId) return toast('Source and destination same');
+    const toAcc = state.accounts.find(a=>a.id===toId); if(!toAcc) return toast('Destination not found');
+    if(acc.balance < amount) return toast('Insufficient funds');
+    acc.balance -= amount; toAcc.balance += amount;
+    acc.transactions.unshift({ id: uid(), type:'transfer', amount, category:null, to_id:toAcc.id, ts:ts() });
+    toAcc.transactions.unshift({ id: uid(), type:'transfer', amount, category:null, to_id:acc.id, ts:ts() });
+    state.history.unshift(`${ts()} — Transferred ₹${amount.toFixed(2)} from ${acc.name} to ${toAcc.name}`);
+    toast('Transfer completed ✔');
+  }
+  clearInputs(); refreshAll();
+}
+
+/* ---------- transactions & history ---------- */
+function renderTxList(){
+  const selId = document.getElementById('selectedAccount').value;
+  const acc = state.accounts.find(a=>a.id===selId);
+  const wrap = document.getElementById('txList');
+  wrap.innerHTML='';
+  if(!acc || acc.transactions.length===0){ wrap.innerHTML = '<div class="muted tiny">No transactions yet.</div>'; return; }
+  acc.transactions.slice(0,30).forEach(t=>{
+    const div = document.createElement('div'); div.className='tx-item';
+    let leftHtml = '';
+    if(t.type==='deposit') leftHtml = `<div style="font-weight:700;color:#16a34a">Deposit</div>`;
+    else if(t.type==='withdraw') leftHtml = `<div style="font-weight:700;color:#ef4444">Expense • ${escapeHtml(t.category||'Misc')}</div>`;
+    else leftHtml = `<div style="font-weight:700;color:#0ea5e9">Transfer</div>`;
+    leftHtml += `<div class="tiny muted">${t.ts}</div>`;
+    const rightHtml = `<div style="text-align:right"><strong>₹${t.amount.toFixed(2)}</strong><div class="tiny muted">${t.type==='transfer' ? 'to '+(t.to_id||'') : ''}</div></div>`;
+    div.innerHTML = `<div>${leftHtml}</div>${rightHtml}`;
+    wrap.appendChild(div);
+  });
+}
+
+/* ---------- global activity ---------- */
+function renderAllActivity(){
+  const el = document.getElementById('allHistory');
+  if(!state.history || state.history.length===0){ el.innerHTML='<div class="muted tiny">No activity yet</div>'; return; }
+  el.innerHTML = state.history.slice(0,200).map(h=>`<div style="padding:8px;border-bottom:1px solid rgba(240,246,255,0.9)">${escapeHtml(h)}</div>`).join('');
+}
+
+/* ---------- GOALS CRUD & RENDER ---------- */
+function createGoal(){
+  const name = document.getElementById('goalName').value.trim();
+  const target = parseFloat(document.getElementById('goalTarget').value) || 0;
+  const targetDate = document.getElementById('goalDate').value;
+
+  if(!name) return toast('Enter a goal name');
+  if(target<=0) return toast('Enter a valid target amount');
+
+  const goal = { id: uid(), name, target, saved: 0, targetDate: targetDate || null };
+  state.goals.push(goal);
+  state.history.unshift(`${ts()} — Created new goal: '${name}' for ₹${target.toFixed(2)}`);
+  toast('Goal created! ✔');
+
+  document.getElementById('goalName').value='';
+  document.getElementById('goalTarget').value='';
+  document.getElementById('goalDate').value='';
+  refreshAll();
+}
+
+function deleteGoal(id){
+    if(!confirm('Are you sure you want to delete this goal?')) return;
+    state.goals = state.goals.filter(g => g.id !== id);
+    state.history.unshift(`${ts()} — Deleted a goal.`);
+    toast('Goal deleted');
+    refreshAll();
+}
+
+function renderGoalsList(){
+    const wrap = document.getElementById('goalsList');
+    wrap.innerHTML='';
+    if(state.goals.length === 0){ wrap.innerHTML = '<div class="muted tiny">No goals defined yet. Start saving for something!</div>'; return; }
+
+    state.goals.forEach(goal => {
+        const percent = Math.min(100, (goal.saved / goal.target) * 100).toFixed(1);
+        const remaining = goal.target - goal.saved;
+
+        let strategicPlan = `<div class="tiny muted" style="margin-top:4px">No strategic plan set (add a target date).</div>`;
+
+        if (goal.targetDate && remaining > 0) {
+            const daysLeft = daysBetween(new Date().toISOString().split('T')[0], goal.targetDate);
+            const monthsLeft = Math.ceil(daysLeft / 30.437); // Average days in a month
+
+            if (monthsLeft > 0) {
+                const monthlySave = (remaining / monthsLeft).toFixed(2);
+                strategicPlan = `<div class="tiny" style="margin-top:4px;color:#2b7bff">🎯 **Strategic Plan:** Save **₹${monthlySave}** per month for **${monthsLeft}** months to hit your target.</div>`;
+            } else {
+                 strategicPlan = `<div class="tiny" style="margin-top:4px;color:#16a34a">Goal deadline passed! Save the remaining amount quickly.</div>`;
+            }
+        } else if (remaining <= 0) {
+             strategicPlan = `<div class="tiny" style="margin-top:4px;color:#16a34a">Goal ACHIEVED! 🎉</div>`;
+        }
+
+        wrap.insertAdjacentHTML('beforeend',
+            `<div class="goal-item">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <div>
+                        <div style="font-weight:800">${escapeHtml(goal.name)}</div>
+                        <div class="muted tiny">Target: ₹${goal.target.toFixed(2)} • Saved: ₹${goal.saved.toFixed(2)}</div>
+                    </div>
+                    <div style="display:flex;gap:8px">
+                        <button class="btn-ghost" onclick="toast('Future feature: Add to saved amount')">Add Save</button>
+                        <button class="btn" style="background:#fff;border:1px solid rgba(240,246,255,0.95)" onclick="deleteGoal('${goal.id}')">Delete</button>
+                    </div>
+                </div>
+                <div style="margin-top:8px;display:flex;justify-content:space-between;font-size:13px">
+                    <div style="font-weight:600">${percent}% Progress</div>
+                    <div class="muted">Due: ${formatDate(goal.targetDate)}</div>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" style="width:${percent}%"></div></div>
+                <div style="font-weight:600;margin-top:6px;color:${remaining <= 0 ? '#16a34a' : '#ef4444'}">Remaining: ₹${Math.max(0, remaining).toFixed(2)}</div>
+                ${strategicPlan}
+            </div>`
+        );
+    });
+}
+
+
+/* ---------- PIE chart (expenses by category) ---------- */
+function updatePieChart(){
+  const totals = {};
+  state.accounts.forEach(a=> a.transactions.forEach(t=> { if(t.type==='withdraw'){ const c = t.category||'Misc'; totals[c] = (totals[c]||0) + t.amount; }}));
+  const labels = Object.keys(totals);
+  const data = labels.map(l=>totals[l]);
+  const colors = labels.map(l=> CATEGORY_COLORS[l] || '#c4b5fd');
+
+  const ctx = document.getElementById('pieCanvas').getContext('2d');
+  if(pieChart) pieChart.destroy();
+  pieChart = new Chart(ctx, {
+    type:'pie',
+    data:{ labels, datasets:[{ data, backgroundColor:colors, hoverOffset:8 }] },
+    options:{ responsive:false, plugins:{ legend:{ display:false } }, animation:{ duration:500 } }
+  });
+
+  const legendWrap = document.getElementById('legendWrap');
+  legendWrap.innerHTML='';
+  labels.forEach((lab,i)=>{
+    legendWrap.insertAdjacentHTML('beforeend', `<div class="chip" style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:${colors[i]}"></span>${escapeHtml(lab)} • ₹${data[i].toFixed(2)}</div>`);
+  });
+}
+
+/* ---------- Investment calc ---------- */
+function calcInvestment(){
+  const P = parseFloat(document.getElementById('invAmount').value) || 0;
+  const rate = parseFloat(document.getElementById('invRate').value) || 0;
+  const years = parseFloat(document.getElementById('invYears').value) || 0;
+  if(P<=0 || rate<=0 || years<=0) return toast('Enter valid investment inputs');
+  const total = P * Math.pow(1 + rate/100, years);
+  const profit = total - P;
+  document.getElementById('invTotal').textContent = `₹${total.toFixed(2)}`;
+  document.getElementById('invBreak').textContent = `Profit: ₹${profit.toFixed(2)} • Rate: ${rate}% • ${years} yrs`;
+
+  const ctx = document.getElementById('invChart').getContext('2d');
+  if(invChart) invChart.destroy();
+  invChart = new Chart(ctx, { type:'bar', data:{ labels:['Principal','Profit'], datasets:[{ data:[P, profit], backgroundColor:['#60a5fa','#93c5fd'] }] }, options:{ responsive:false, plugins:{ legend:{ display:false } } } });
+}
+
+function clearInvestment(){ document.getElementById('invAmount').value=''; document.getElementById('invRate').value=''; document.getElementById('invYears').value=''; document.getElementById('invTotal').textContent='₹0.00'; document.getElementById('invBreak').textContent='Profit: ₹0.00'; if(invChart) invChart.destroy(); invChart=null; }
+
+/* ---------- Loan calc (EMI) ---------- */
+function calcLoan(){
+  const P = parseFloat(document.getElementById('loanAmount').value) || 0;
+  const annualR = parseFloat(document.getElementById('loanRate').value) || 0;
+  const years = parseFloat(document.getElementById('loanYears').value) || 0;
+  if(P<=0 || annualR<=0 || years<=0) return toast('Enter valid loan inputs');
+  const N = years * 12;
+  const R = annualR/12/100;
+  const numerator = P * R * Math.pow(1+R, N);
+  const denominator = Math.pow(1+R, N) - 1;
+  const emi = denominator === 0 ? P/N : numerator/denominator;
+  const totalPay = emi * N;
+  const totalInterest = totalPay - P;
+  document.getElementById('emiAmt').textContent = `₹${emi.toFixed(2)}`;
+  document.getElementById('loanBreak').textContent = `Total: ₹${totalPay.toFixed(2)} • Interest: ₹${totalInterest.toFixed(2)}`;
+
+  const ctx = document.getElementById('loanChart').getContext('2d');
+  if(loanChart) loanChart.destroy();
+  loanChart = new Chart(ctx, { type:'doughnut', data:{ labels:['Principal','Interest'], datasets:[{ data:[P, totalInterest], backgroundColor:['#60a5fa','#fb7185'] }] }, options:{ responsive:false, plugins:{ legend:{ position:'bottom' } } } });
+}
+
+function clearLoan(){ document.getElementById('loanAmount').value=''; document.getElementById('loanRate').value=''; document.getElementById('loanYears').value=''; document.getElementById('emiAmt').textContent='₹0.00'; document.getElementById('loanBreak').textContent='Total payment & interest'; if(loanChart) loanChart.destroy(); loanChart=null; }
+
+/* ---------- small utilities ---------- */
+function exportData(){ const blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='finance_buddy_data.json'; a.click(); URL.revokeObjectURL(url); toast('Exported data'); }
+function clearAllData(){ if(!confirm('Clear stored data?')) return; state = defaultState(); saveState(); refreshAll(); toast('Data cleared'); }
+
+(function init(){
+  refreshAll();
+  onOpTypeChange();
+  switchTab('dashboard');
+})();
+</script>
+</body>
+</html>
